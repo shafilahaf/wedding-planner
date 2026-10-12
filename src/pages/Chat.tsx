@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, MessagesSquare, SendHorizontal, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { HeartHandshake, MessagesSquare, SendHorizontal, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { coupleName, useStore } from '../store'
-import { Button, Card, Chips, confirmDelete, Empty, IconButton, Input, Modal, PageHeader } from '../components/ui'
+import { useSync } from '../lib/sync'
+import { usePartnerLink } from '../components/PartnerCard'
+import { Button, Card, confirmDelete, Empty, PageHeader } from '../components/ui'
 import { cn } from '../lib/utils'
-
-interface Room {
-  id: string
-  name: string
-}
 
 interface Message {
   id: number
@@ -31,93 +28,43 @@ const dayLabel = (iso: string) => new Date(iso).toLocaleDateString('id-ID', { we
 const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 
 export default function Chat() {
-  const profile = useStore((s) => s.profile)
+  const plannerId = useSync((s) => s.plannerId)
+  const { link, error } = usePartnerLink()
   const [me, setMe] = useState<Me | null>(null)
-  const [rooms, setRooms] = useState<Room[]>([])
-  const [roomId, setRoomId] = useState('')
-  const [error, setError] = useState('')
-  const [membersOpen, setMembersOpen] = useState(false)
+  const navigate = useNavigate()
 
-  // Make sure our own room exists (named after the couple), then list every room we can see.
   useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      const { data } = await supabase.auth.getSession()
+    supabase.auth.getSession().then(({ data }) => {
       const user = data.session?.user
-      if (!user || cancelled) return
-      setMe({ id: user.id, email: (user.email ?? '').toLowerCase() })
-      const { error: upErr } = await supabase.from('chat_rooms').upsert({ id: user.id, name: coupleName(profile) })
-      if (upErr) {
-        if (!cancelled) setError(upErr.message)
-        return
-      }
-      const { data: list, error: listErr } = await supabase.from('chat_rooms').select('id, name')
-      if (cancelled) return
-      if (listErr) return setError(listErr.message)
-      const sorted = [...(list as Room[])].sort((a, b) => Number(b.id === user.id) - Number(a.id === user.id))
-      setRooms(sorted)
-      setRoomId((cur) => cur || user.id)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [profile])
+      if (user) setMe({ id: user.id, email: (user.email ?? '').toLowerCase() })
+    })
+  }, [])
 
-  const room = rooms.find((r) => r.id === roomId)
-  const isOwner = !!me && roomId === me.id
-
-  const leave = async () => {
-    if (!me || !room || !window.confirm(`Keluar dari grup ${room.name || 'ini'}?`)) return
-    await supabase.from('chat_members').delete().eq('room_id', room.id).eq('email', me.email)
-    setRooms((rs) => rs.filter((r) => r.id !== room.id))
-    setRoomId(me.id)
-  }
+  const other = link && me ? (link.owner_id === me.id ? link.partner_email : link.owner_email) : ''
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Ngobrol bareng tim"
-        title="Chat"
-        icon={<MessagesSquare size={38} strokeWidth={1.6} />}
-        actions={
-          room &&
-          (isOwner ? (
-            <Button variant="outline" onClick={() => setMembersOpen(true)}>
-              <Users size={17} /> Anggota
-            </Button>
-          ) : (
-            <Button variant="soft" onClick={leave}>
-              <LogOut size={16} /> Keluar grup
-            </Button>
-          ))
-        }
-      />
+      <PageHeader eyebrow={other ? `Berdua dengan ${displayName(other)}` : 'Berdua'} title="Chat" icon={<MessagesSquare size={38} strokeWidth={1.6} />} />
 
       {error ? (
-        <Empty
-          icon={<MessagesSquare />}
-          title="Chat belum bisa dipakai"
-          desc={`Pastikan migration chat sudah dijalankan di Supabase (lihat README). Detail: ${error}`}
-        />
-      ) : !me || !room ? (
+        <Empty icon={<MessagesSquare />} title="Chat belum bisa dipakai" desc={`Pastikan migration akun pasangan sudah dijalankan di Supabase (lihat README). Detail: ${error}`} />
+      ) : link === undefined || !me || !plannerId ? (
         <p className="py-12 text-center text-muted">Memuat…</p>
+      ) : !link ? (
+        <Empty
+          icon={<HeartHandshake />}
+          title="Hubungkan akun pasangan dulu"
+          desc="Chat ini khusus untuk kalian berdua. Masukkan email akun pasanganmu di Pengaturan, lalu kalian bisa ngobrol di sini."
+          action={<Button onClick={() => navigate('/pengaturan')}>Buka Pengaturan</Button>}
+        />
       ) : (
-        <>
-          {rooms.length > 1 && (
-            <div className="mb-4">
-              <Chips value={roomId} onChange={setRoomId} options={rooms.map((r) => ({ value: r.id, label: r.id === me.id ? 'Grup kami' : r.name || 'Grup' }))} />
-            </div>
-          )}
-          <Thread key={room.id} room={room} me={me} />
-        </>
+        <Thread roomId={plannerId} me={me} />
       )}
-
-      {isOwner && me && <Members open={membersOpen} onClose={() => setMembersOpen(false)} roomId={me.id} myEmail={me.email} />}
     </div>
   )
 }
 
-function Thread({ room, me }: { room: Room; me: Me }) {
+function Thread({ roomId, me }: { roomId: string; me: Me }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
@@ -130,7 +77,7 @@ function Thread({ room, me }: { room: Room; me: Me }) {
     supabase
       .from('chat_messages')
       .select('*')
-      .eq('room_id', room.id)
+      .eq('room_id', roomId)
       .order('id', { ascending: false })
       .limit(PAGE)
       .then(({ data, error }) => {
@@ -142,8 +89,8 @@ function Thread({ room, me }: { room: Room; me: Me }) {
 
     const add = (m: Message) => setMessages((ms) => (ms.some((x) => x.id === m.id) ? ms : [...ms, m]))
     const channel = supabase
-      .channel(`chat:${room.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${room.id}` }, (p) => add(p.new as Message))
+      .channel(`chat:${roomId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${roomId}` }, (p) => add(p.new as Message))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (p) =>
         setMessages((ms) => ms.filter((x) => x.id !== (p.old as Partial<Message>).id)),
       )
@@ -152,7 +99,7 @@ function Thread({ room, me }: { room: Room; me: Me }) {
       cancelled = true
       supabase.removeChannel(channel)
     }
-  }, [room.id])
+  }, [roomId])
 
   useEffect(() => {
     // Scroll only the message list; scrollIntoView would also move the page under the mobile nav.
@@ -166,7 +113,7 @@ function Thread({ room, me }: { room: Room; me: Me }) {
     if (!body || sending) return
     setSending(true)
     setError('')
-    const { data, error } = await supabase.from('chat_messages').insert({ room_id: room.id, body }).select().single()
+    const { data, error } = await supabase.from('chat_messages').insert({ room_id: roomId, body }).select().single()
     setSending(false)
     if (error) return setError(error.message)
     setText('')
@@ -186,24 +133,23 @@ function Thread({ room, me }: { room: Room; me: Me }) {
         {loading ? (
           <p className="py-12 text-center text-sm text-muted">Memuat pesan…</p>
         ) : messages.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted">Belum ada pesan. Mulai obrolan dengan tim kalian 👋</p>
+          <p className="py-12 text-center text-sm text-muted">Belum ada pesan. Mulai ngobrol berdua di sini 💬</p>
         ) : (
           messages.map((m, i) => {
             const prev = messages[i - 1]
             const mine = m.sender_id === me.id
             const newDay = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString()
-            const showName = !mine && (newDay || prev.sender_id !== m.sender_id)
+            const gap = !newDay && prev.sender_id !== m.sender_id
             return (
               <div key={m.id}>
                 {newDay && <p className="my-4 text-center text-xs font-medium text-muted">{dayLabel(m.created_at)}</p>}
-                <div className={cn('group flex items-end gap-1', mine ? 'justify-end' : 'justify-start', showName && 'mt-3')}>
+                <div className={cn('group flex items-end gap-1', mine ? 'justify-end' : 'justify-start', gap && 'mt-3')}>
                   {mine && (
                     <button onClick={() => removeMessage(m)} className="mb-1 rounded-full p-1.5 text-muted opacity-0 transition group-hover:opacity-100 hover:bg-sand focus:opacity-100" aria-label="Hapus pesan">
                       <Trash2 size={14} />
                     </button>
                   )}
                   <div className={cn('max-w-[80%] rounded-3xl px-4 py-2.5', mine ? 'rounded-br-lg bg-brand text-on-brand' : 'rounded-bl-lg bg-sand text-ink')}>
-                    {showName && <p className="mb-0.5 text-xs font-semibold text-brand">{displayName(m.sender_email)}</p>}
                     <p className="text-[15px] leading-snug break-words whitespace-pre-wrap">{m.body}</p>
                     <p className={cn('mt-0.5 text-right text-[11px]', mine ? 'text-on-brand/70' : 'text-muted')}>{timeLabel(m.created_at)}</p>
                   </div>
@@ -239,70 +185,5 @@ function Thread({ room, me }: { room: Room; me: Me }) {
         </button>
       </form>
     </Card>
-  )
-}
-
-function Members({ open, onClose, roomId, myEmail }: { open: boolean; onClose: () => void; roomId: string; myEmail: string }) {
-  const [emails, setEmails] = useState<string[]>([])
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (!open) return
-    supabase
-      .from('chat_members')
-      .select('email')
-      .eq('room_id', roomId)
-      .order('created_at')
-      .then(({ data, error }) => (error ? setError(error.message) : setEmails((data ?? []).map((r) => r.email as string))))
-  }, [open, roomId])
-
-  const invite = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const v = email.trim().toLowerCase()
-    setError('')
-    if (!/^\S+@\S+\.\S+$/.test(v)) return setError('Email tidak valid.')
-    if (v === myEmail) return setError('Itu email akunmu sendiri.')
-    if (emails.includes(v)) return setError('Email ini sudah diundang.')
-    const { error } = await supabase.from('chat_members').insert({ room_id: roomId, email: v })
-    if (error) return setError(error.message)
-    setEmails((es) => [...es, v])
-    setEmail('')
-  }
-
-  const remove = async (v: string) => {
-    if (!window.confirm(`Keluarkan ${v} dari grup?`)) return
-    const { error } = await supabase.from('chat_members').delete().eq('room_id', roomId).eq('email', v)
-    if (error) return setError(error.message)
-    setEmails((es) => es.filter((x) => x !== v))
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Anggota grup">
-      <p className="text-sm text-muted">
-        Undang pasangan, keluarga, atau WO dengan email mereka. Setelah mereka daftar/masuk ke aplikasi ini dengan email itu, grup ini muncul di menu Chat mereka. Anggota hanya bisa ikut chat, tidak bisa melihat data planner kalian.
-      </p>
-      <form onSubmit={invite} className="mt-4 flex gap-2">
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@contoh.com" />
-        <Button type="submit" className="shrink-0">
-          <UserPlus size={17} /> Undang
-        </Button>
-      </form>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      <ul className="mt-4 divide-y divide-line">
-        <li className="flex items-center justify-between py-3 text-sm">
-          <span className="truncate">{myEmail}</span>
-          <span className="text-muted">Pemilik</span>
-        </li>
-        {emails.map((v) => (
-          <li key={v} className="flex items-center justify-between gap-2 py-3 text-sm">
-            <span className="truncate">{v}</span>
-            <IconButton onClick={() => remove(v)} aria-label={`Keluarkan ${v}`}>
-              <X size={16} />
-            </IconButton>
-          </li>
-        ))}
-      </ul>
-    </Modal>
   )
 }

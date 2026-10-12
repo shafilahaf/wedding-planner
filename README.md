@@ -16,20 +16,20 @@ Aplikasi web untuk merencanakan pernikahan dari awal sampai hari H. Dibuat denga
 | **Seserahan & Mahar** | Daftar barang, budget vs harga beli, tandai yang sudah dibeli |
 | **Tabungan** | Setor/tarik, target, berapa yang perlu ditabung per bulan, grafik 6 bulan, kontribusi per orang. Saldo tampil di pojok atas |
 | **Catatan** | Catatan bebas (hasil meeting vendor, kontak, dll) |
-| **Chat** | Grup chat dengan pasangan, keluarga, atau WO. Undang lewat email; anggota hanya bisa ikut chat, tidak bisa melihat data planner |
-| **Pengaturan** | Detail pernikahan, link undangan digital & template pesan WA, backup/restore data, reset |
+| **Chat** | Chat berdua antara calon pengantin (setelah akun pasangan dihubungkan) |
+| **Pengaturan** | Akun pasangan (planner bersama), tampilan terang/gelap, detail pernikahan, link undangan digital & template pesan WA, backup/restore data, reset |
 
 Ikon lonceng menampilkan pengingat: tugas terlambat/mendekati deadline, pembayaran jatuh tempo, dan undangan yang belum dikirim.
 
 ## Akun & penyimpanan (Supabase)
 
-Pengguna harus **daftar / masuk** (email + password). Data planner tersimpan di tabel `planner` (satu baris JSON per akun) dan foto di bucket Storage `media`, dilindungi Row Level Security sehingga tiap akun hanya bisa membaca datanya sendiri. Login dengan akun yang sama di HP dan laptop untuk melihat data yang sama.
+Pengguna harus **daftar / masuk** (email + password). Data planner tersimpan di tabel `planner` (satu baris JSON per akun) dan foto di bucket Storage `media`, dilindungi Row Level Security sehingga tiap akun hanya bisa membaca datanya sendiri. Login dengan akun yang sama di HP dan laptop untuk melihat data yang sama. Calon pengantin juga bisa memakai akun masing-masing: di **Pengaturan → Akun pasangan**, masukkan email akun pasangan, maka kalian berdua membuka planner yang sama dan bisa chat berdua.
 
 ### Setup sekali di Supabase
 
-1. **Buat tabel & bucket**: buka dashboard Supabase → **SQL Editor** → tempel isi `supabase/migrations/20261012000000_init.sql` → **Run**. Lalu ulangi untuk `supabase/migrations/20261013000000_chat.sql` (tabel & realtime untuk fitur Chat).
+1. **Buat tabel & bucket**: buka dashboard Supabase → **SQL Editor** → tempel isi `supabase/migrations/20261012000000_init.sql` → **Run**. Lalu ulangi untuk `supabase/migrations/20261013000000_chat.sql` dan `supabase/migrations/20261014000000_partner.sql` (akun pasangan, chat berdua, dan update langsung), berurutan.
    (Atau dengan CLI: `supabase link --project-ref ebovbhmdevhxisiyhmjl` lalu `supabase db push`.)
-2. **Authentication → Sign In / Providers → Email**: biarkan **Confirm email** aktif. Akses Chat ditentukan dari email akun, jadi tanpa konfirmasi orang lain bisa mendaftar memakai email yang kamu undang dan ikut membaca chat. (Untuk tes cepat boleh dimatikan sementara.)
+2. **Authentication → Sign In / Providers → Email**: biarkan **Confirm email** aktif. Akun pasangan dihubungkan lewat email, jadi tanpa konfirmasi orang lain bisa mendaftar memakai email pasanganmu dan ikut membuka planner & chat kalian. (Untuk tes cepat boleh dimatikan sementara.)
 3. **Authentication → URL Configuration**: isi **Site URL** dengan alamat Vercel kamu (misal `https://wedding-planner-xxx.vercel.app`) dan tambahkan URL yang sama di **Redirect URLs**. Link konfirmasi & reset password akan membuka alamat ini.
 
 Konfigurasi klien ada di `.env` (URL project & publishable key, aman untuk dibagikan). `VITE_SITE_URL` opsional: isi dengan URL Vercel agar link email yang diminta dari aplikasi Android membuka website.
