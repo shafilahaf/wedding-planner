@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
+
+  --color-cream: #faf8f4;
+  --color-sand: #f3ede4;
+  --color-line: #e9e1d6;
+  --color-ink: #2a211b;
+  --color-muted: #7c6f64;
+  --color-brand: #bc5b3a;
+  --color-brand-dark: #a14a2c;
+  --color-brand-soft: #f7e7df;
+  --color-gold: #d9a441;
+  --color-gold-soft: #fbf0d9;
+  --color-rose: #bd5468;
+  --color-sage: #4f7a5a;
+  --color-sage-soft: #e3efe5;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-cream text-ink font-sans antialiased;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+@layer components {
+.input {
+  @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-muted/60 focus:border-brand focus:ring-2 focus:ring-brand/15;
+}
+
+.label {
+  @apply mb-1.5 block text-sm font-medium text-muted;
+}
+
+.card {
+  @apply rounded-2xl border border-line bg-white/80 shadow-[0_1px_2px_rgba(42,33,27,0.04)];
+}
+
+.eyebrow {
+  @apply text-xs font-medium tracking-[0.2em] text-muted uppercase;
+}
+
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.dot-grid {
+  background-image: radial-gradient(circle, #e2d8cb 1px, transparent 1px);
+  background-size: 22px 22px;
+}
