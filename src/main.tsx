@@ -8,6 +8,7 @@ import { startSync, stopSync } from './lib/sync'
 import Auth, { NewPassword } from './pages/Auth'
 import { useStore } from './store'
 import Layout from './components/Layout'
+import ErrorBoundary, { PageBoundary } from './components/ErrorBoundary'
 import Dashboard from './pages/Dashboard'
 import Guests from './pages/Guests'
 import Checklist from './pages/Checklist'
@@ -69,19 +70,21 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="undangan" element={<Guests />} />
-          <Route path="checklist" element={<Checklist />} />
-          <Route path="anggaran" element={<Budget />} />
-          <Route path="vendor" element={<Vendors />} />
-          <Route path="moodboard" element={<Moodboard />} />
-          <Route path="rundown" element={<Rundown />} />
-          <Route path="seserahan" element={<Seserahan />} />
-          <Route path="tabungan" element={<Savings />} />
-          <Route path="catatan" element={<Notes />} />
-          <Route path="pengaturan" element={<Settings />} />
-          <Route path="lainnya" element={<More />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<PageBoundary />}>
+            <Route index element={<Dashboard />} />
+            <Route path="undangan" element={<Guests />} />
+            <Route path="checklist" element={<Checklist />} />
+            <Route path="anggaran" element={<Budget />} />
+            <Route path="vendor" element={<Vendors />} />
+            <Route path="moodboard" element={<Moodboard />} />
+            <Route path="rundown" element={<Rundown />} />
+            <Route path="seserahan" element={<Seserahan />} />
+            <Route path="tabungan" element={<Savings />} />
+            <Route path="catatan" element={<Notes />} />
+            <Route path="pengaturan" element={<Settings />} />
+            <Route path="lainnya" element={<More />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
@@ -98,6 +101,8 @@ function Splash({ children }: { children?: React.ReactNode }) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
