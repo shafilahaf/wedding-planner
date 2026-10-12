@@ -20,12 +20,18 @@ Aplikasi web untuk merencanakan pernikahan dari awal sampai hari H. Dibuat denga
 
 Ikon lonceng menampilkan pengingat: tugas terlambat/mendekati deadline, pembayaran jatuh tempo, dan undangan yang belum dikirim.
 
-## Penyimpanan data
+## Akun & penyimpanan (Supabase)
 
-Semua data disimpan **di browser** (IndexedDB), tanpa server/database dan tanpa login. Artinya:
+Pengguna harus **daftar / masuk** (email + password). Data planner tersimpan di tabel `planner` (satu baris JSON per akun) dan foto di bucket Storage `media`, dilindungi Row Level Security sehingga tiap akun hanya bisa membaca datanya sendiri. Login dengan akun yang sama di HP dan laptop untuk melihat data yang sama.
 
-- Data hanya ada di perangkat & browser yang dipakai.
-- Untuk pindah perangkat atau berjaga-jaga, pakai **Pengaturan → Unduh backup**, lalu **Pulihkan dari backup** di perangkat lain.
+### Setup sekali di Supabase
+
+1. **Buat tabel & bucket**: buka dashboard Supabase → **SQL Editor** → tempel isi `supabase/migrations/20261012000000_init.sql` → **Run**.
+   (Atau dengan CLI: `supabase link --project-ref ebovbhmdevhxisiyhmjl` lalu `supabase db push`.)
+2. **Authentication → Sign In / Providers → Email**: untuk tes cepat, matikan **Confirm email** supaya bisa langsung masuk setelah daftar. Kalau tetap aktif, pengguna harus klik link di email dulu.
+3. **Authentication → URL Configuration**: isi **Site URL** dengan alamat Vercel kamu (misal `https://wedding-planner-xxx.vercel.app`) dan tambahkan URL yang sama di **Redirect URLs**. Link konfirmasi & reset password akan membuka alamat ini.
+
+Konfigurasi klien ada di `.env` (URL project & publishable key, aman untuk dibagikan). `VITE_SITE_URL` opsional: isi dengan URL Vercel agar link email yang diminta dari aplikasi Android membuka website.
 
 ## Menjalankan di komputer
 
@@ -50,3 +56,27 @@ Atau lewat CLI:
 npm i -g vercel
 vercel --prod
 ```
+
+## Aplikasi Android (APK)
+
+Project Android dibuat dengan [Capacitor](https://capacitorjs.com) di folder `android/`.
+
+### Cara 1: otomatis lewat GitHub Actions (tanpa install apa pun)
+
+Workflow `.github/workflows/android.yml` membangun APK setiap ada push ke `main` (atau jalankan manual di tab **Actions → Build Android APK → Run workflow**). Setelah selesai, unduh **wedding-planner-apk** di bagian *Artifacts*, ekstrak, lalu pasang `app-debug.apk` di HP (izinkan "instal dari sumber tidak dikenal").
+
+### Cara 2: build di komputer
+
+Butuh Node 22, JDK 21, dan Android Studio (Android SDK 36).
+
+```bash
+npm install
+npm run build
+npx cap sync android
+cd android && ./gradlew assembleDebug
+# hasil: android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Atau `npx cap open android` lalu **Run** dari Android Studio ke HP yang tersambung.
+
+Setiap mengubah kode web, jalankan lagi `npm run build && npx cap sync android` sebelum build APK.

@@ -1,5 +1,7 @@
-import { useRef, useState } from 'react'
-import { Download, Pencil, Settings as SettingsIcon, Trash2, Upload } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Download, LogOut, Pencil, Settings as SettingsIcon, Trash2, Upload } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { signOut, useSync } from '../lib/sync'
 import { coupleName, exportData, useStore, type Data } from '../store'
 import { Button, Card, Field, Input, PageHeader } from '../components/ui'
 import { downloadFile, fmtLongDate, rupiah, todayISO } from '../lib/utils'
@@ -11,6 +13,11 @@ export default function Settings() {
   const [editOpen, setEditOpen] = useState(false)
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const [email, setEmail] = useState('')
+  const sync = useSync()
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ''))
+  }, [])
 
   const backup = () => {
     downloadFile(`wedding-planner-backup-${todayISO()}.json`, JSON.stringify(exportData()))
@@ -35,6 +42,24 @@ export default function Settings() {
       <PageHeader eyebrow="Aplikasi" title="Pengaturan" icon={<SettingsIcon size={38} strokeWidth={1.6} />} />
 
       <section className="space-y-6">
+        <Card className="flex flex-wrap items-center justify-between gap-4 p-6">
+          <div className="min-w-0">
+            <p className="eyebrow">Akun</p>
+            <p className="mt-2 truncate font-medium">{email}</p>
+            <p className="text-sm text-muted">
+              {sync.status === 'offline' ? `Belum tersinkron (${sync.error || 'offline'}), akan dicoba lagi otomatis.` : sync.status === 'saving' ? 'Menyimpan ke cloud…' : 'Tersimpan di cloud. Masuk dengan akun yang sama di HP/laptop lain untuk melihat data yang sama.'}
+            </p>
+          </div>
+          <Button
+            variant="soft"
+            onClick={async () => {
+              if (window.confirm('Keluar dari akun ini?')) await signOut()
+            }}
+          >
+            <LogOut size={16} /> Keluar
+          </Button>
+        </Card>
+
         <Card className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -68,7 +93,7 @@ export default function Settings() {
         <Card className="space-y-4 p-6">
           <p className="eyebrow">Data & backup</p>
           <p className="text-sm text-muted">
-            Semua data tersimpan di browser perangkat ini (tidak dikirim ke server). Rutin unduh backup, dan gunakan file backup untuk memindahkan data ke perangkat/browser lain.
+            Data otomatis tersimpan di akunmu (Supabase). Kamu tetap bisa mengunduh salinan cadangan dalam bentuk file, dan memulihkannya kapan saja.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={backup}>
@@ -84,7 +109,7 @@ export default function Settings() {
 
         <Card className="border-red-200 p-6">
           <p className="eyebrow text-red-700">Zona berbahaya</p>
-          <p className="mt-2 text-sm text-muted">Hapus semua data dan mulai dari awal.</p>
+          <p className="mt-2 text-sm text-muted">Hapus semua data di akun ini dan mulai dari awal.</p>
           <Button
             variant="danger"
             className="mt-4"

@@ -20,6 +20,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { coupleName, savingsBalance, useStore, weddingDate } from '../store'
+import { useSync } from '../lib/sync'
 import { cn, daysUntil, fmtDate, relDay, rupiah, todayISO } from '../lib/utils'
 
 export const NAV = [
@@ -136,7 +137,7 @@ function TopBar({ title }: { title: string }) {
   const growth = before > 0 ? (thisMonth / before) * 100 : 0
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-cream/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-line bg-cream/90 pt-[env(safe-area-inset-top)] backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 md:px-10">
         <p className="min-w-0 flex-1 truncate font-serif text-2xl md:text-3xl">{title}</p>
         <Link
@@ -161,9 +162,20 @@ function TopBar({ title }: { title: string }) {
             </span>
           )}
         </Link>
+        <SyncDot />
         <Notifications />
       </div>
     </header>
+  )
+}
+
+function SyncDot() {
+  const { status, error } = useSync()
+  const label = status === 'offline' ? `Belum tersinkron: ${error || 'offline'}` : status === 'saving' || status === 'loading' ? 'Menyimpan…' : 'Tersimpan di cloud'
+  return (
+    <Link to="/pengaturan" title={label} aria-label={label} className="hidden h-11 w-6 items-center justify-center sm:flex">
+      <span className={cn('h-2.5 w-2.5 rounded-full', status === 'offline' ? 'bg-red-500' : status === 'saved' ? 'bg-sage' : 'animate-pulse bg-gold')} />
+    </Link>
   )
 }
 

@@ -3,7 +3,9 @@ import { Copy, FileText, ImagePlus, Minus, Palette, Pencil, Plus, Sparkles, Tras
 import { useStore, type Board, type MoodItem, type MoodTag } from '../store'
 import { Badge, Button, Chips, confirmDelete, Empty, Field, IconButton, Input, Modal, Select } from '../components/ui'
 import { PALETTE_PRESETS } from '../lib/templates'
-import { cn, compressImage, uid } from '../lib/utils'
+import { cn, uid } from '../lib/utils'
+import { deleteImage, uploadImage } from '../lib/media'
+import { useSync } from '../lib/sync'
 
 const TAGS: MoodTag[] = ['Dekorasi', 'Gaun', 'Groom', 'Venue', 'Makanan', 'Lainnya']
 
@@ -18,6 +20,8 @@ export default function Moodboard() {
   const [museOpen, setMuseOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(0)
+  const sync = useSync((s) => s.status)
 
   if (!board) {
     return (
@@ -37,11 +41,22 @@ export default function Moodboard() {
 
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return
+    const list = Array.from(files)
     const imgs: MoodItem[] = []
-    for (const f of Array.from(files)) {
-      imgs.push({ id: uid(), type: 'image', tag: tag === 'semua' ? 'Dekorasi' : tag, src: await compressImage(f, 1000, 0.78), title: '', createdAt: Date.now() })
+    setUploading(list.length)
+    try {
+      for (const f of list) {
+        imgs.push({ id: uid(), type: 'image', tag: tag === 'semua' ? 'Dekorasi' : tag, src: await uploadImage(f, 1200, 0.78), title: '', createdAt: Date.now() })
+        setUploading((n) => n - 1)
+      }
+    } catch (e) {
+      alert('Sebagian foto gagal diunggah: ' + (e instanceof Error ? e.message : e))
+    } finally {
+      setUploading(0)
+      // Read the latest items: the board may have changed while uploading.
+      const latest = useStore.getState().boards.find((b) => b.id === board.id)
+      if (latest && imgs.length) update('boards', board.id, { items: [...imgs, ...latest.items] })
     }
-    setItems([...imgs, ...board.items])
   }
 
   const newBoard = () => {
@@ -69,7 +84,8 @@ export default function Moodboard() {
           <Plus size={18} /> Board Baru
         </Button>
         <Badge className="px-4 py-2.5 text-sm text-ink">
-          <span className="h-2 w-2 rounded-full bg-sage" /> Tersimpan otomatis
+          <span className={cn('h-2 w-2 rounded-full', sync === 'offline' ? 'bg-red-500' : sync === 'saved' ? 'bg-sage' : 'animate-pulse bg-gold')} />
+          {sync === 'offline' ? 'Belum tersinkron' : sync === 'saved' ? 'Tersimpan otomatis' : 'Menyimpan…'}
         </Badge>
         <Button variant="soft" className="border border-line bg-white" onClick={() => setMuseOpen(true)}>
           <Sparkles size={18} className="text-brand" /> Inspirasi palet
@@ -82,6 +98,9 @@ export default function Moodboard() {
             title="Hapus board"
             onClick={() => {
               if (confirmDelete(`board "${board.name}"`)) {
+                // Duplicated boards share image files, so only delete files no other board uses.
+                const others = new Set(boards.filter((b) => b.id !== board.id).flatMap((b) => b.items.map((x) => x.src)))
+                board.items.filter((x) => x.src && !others.has(x.src)).forEach((x) => deleteImage(x.src).catch(() => {}))
                 remove('boards', board.id)
                 setBoardId(boards.find((b) => b.id !== board.id)!.id)
               }
@@ -93,8 +112,8 @@ export default function Moodboard() {
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2 border-t border-line pt-5">
-        <Button onClick={() => fileRef.current?.click()}>
-          <ImagePlus size={18} /> Foto & Media
+        <Button disabled={uploading > 0} onClick={() => fileRef.current?.click()}>
+          <ImagePlus size={18} /> {uploading > 0 ? `Mengunggah ${uploading}…` : 'Foto & Media'}
         </Button>
         <Button variant="soft" onClick={() => setEditing({ type: 'note' })}>
           <FileText size={18} className="text-brand" /> Catatan
@@ -132,7 +151,11 @@ export default function Moodboard() {
         ) : (
           <div className={cn('gap-4 [&>*]:mb-4', COLS[zoom])}>
             {items.map((i) => (
-              <MoodCard key={i.id} item={i} onEdit={() => setEditing(i)} onDelete={() => confirmDelete() && setItems(board.items.filter((x) => x.id !== i.id))} />
+              <MoodCard key={i.id} item={i} onEdit={() => setEditing(i)} onDelete={() => {
+                  if (!confirmDelete()) return
+                  deleteImage(i.src).catch(() => {})
+                  setItems(board.items.filter((x) => x.id !== i.id))
+                }} />
             ))}
           </div>
         )}

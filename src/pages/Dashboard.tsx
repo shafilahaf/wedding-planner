@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CalendarDays, Camera, Clock3, Heart, MapPin, Sparkles, Trash2 } from 'lucide-react'
 import { coupleName, savingsBalance, useStore, weddingDate, type Profile } from '../store'
+import { uploadImage, deleteImage } from '../lib/media'
 import { Badge, Button, Card, Field, Input, Modal, Progress, MoneyInput } from '../components/ui'
-import { cn, compressImage, daysUntil, fmtDate, fmtLongDate, parseISODate, pct, relDay, rupiah, shortRupiah } from '../lib/utils'
+import { cn, daysUntil, fmtDate, fmtLongDate, parseISODate, pct, relDay, rupiah, shortRupiah } from '../lib/utils'
 
 export default function Dashboard() {
   const profile = useStore((s) => s.profile)
@@ -53,10 +54,20 @@ function Hero() {
   const date = weddingDate(profile)
   const time = profile.akadDate ? profile.akadTime : profile.resepsiTime
   const cd = useCountdown(date, time)
+  const [uploading, setUploading] = useState(false)
 
   const onFile = async (f?: File) => {
     if (!f) return
-    setProfile({ coverPhoto: await compressImage(f, 1800, 0.82) })
+    setUploading(true)
+    try {
+      const url = await uploadImage(f, 1800, 0.82)
+      deleteImage(profile.coverPhoto).catch(() => {})
+      setProfile({ coverPhoto: url })
+    } catch (e) {
+      alert('Gagal mengunggah foto: ' + (e instanceof Error ? e.message : e))
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -71,11 +82,14 @@ function Hero() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
 
       <div className="absolute inset-x-5 top-5 flex justify-between">
-        <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 rounded-full bg-black/45 px-4 py-2 text-sm text-white backdrop-blur hover:bg-black/60">
-          <Camera size={17} /> {profile.coverPhoto ? 'Ganti foto' : 'Tambah foto'}
+        <button disabled={uploading} onClick={() => fileRef.current?.click()} className="flex items-center gap-2 rounded-full bg-black/45 px-4 py-2 text-sm text-white backdrop-blur hover:bg-black/60">
+          <Camera size={17} /> {uploading ? 'Mengunggah…' : profile.coverPhoto ? 'Ganti foto' : 'Tambah foto'}
         </button>
         {profile.coverPhoto && (
-          <button onClick={() => setProfile({ coverPhoto: '' })} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur hover:bg-black/60" aria-label="Hapus foto">
+          <button onClick={() => {
+              deleteImage(profile.coverPhoto).catch(() => {})
+              setProfile({ coverPhoto: '' })
+            }} className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur hover:bg-black/60" aria-label="Hapus foto">
             <Trash2 size={17} />
           </button>
         )}

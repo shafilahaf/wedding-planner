@@ -1,3 +1,7 @@
+import { Capacitor } from '@capacitor/core'
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
+
 export const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 
@@ -55,29 +59,35 @@ export const relDay = (iso: string) => {
   return `${d} hari lagi`
 }
 
-/** Resize an image file and return a JPEG data URL (keeps storage small). */
-export function compressImage(file: File, maxSize = 1400, quality = 0.8): Promise<string> {
+/** Resize an image file to a JPEG blob (keeps uploads small). */
+export function compressImage(file: File, maxSize = 1400, quality = 0.8): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = reject
-    reader.onload = () => {
-      const img = new Image()
-      img.onerror = reject
-      img.onload = () => {
-        const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', quality))
-      }
-      img.src = reader.result as string
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Gambar tidak bisa dibaca'))
     }
-    reader.readAsDataURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Gagal memproses gambar'))), 'image/jpeg', quality)
+    }
+    img.src = url
   })
 }
 
-export function downloadFile(name: string, content: string, type = 'application/json') {
+export async function downloadFile(name: string, content: string, type = 'application/json') {
+  // Android app: blob downloads don't work in the WebView, so save to cache and open the share sheet.
+  if (Capacitor.isNativePlatform()) {
+    const { uri } = await Filesystem.writeFile({ path: name, data: content, directory: Directory.Cache, encoding: Encoding.UTF8 })
+    await Share.share({ title: name, url: uri })
+    return
+  }
   const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
