@@ -70,14 +70,14 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream via-brand-soft/40 to-gold-soft/60 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-brand text-white shadow-lg">
+          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-brand to-rose text-on-brand shadow-lg shadow-brand/30">
             <Heart size={30} fill="currentColor" />
           </span>
           <h1 className="font-serif text-4xl">Wedding Planner</h1>
           <p className="mt-2 text-muted">Rencanakan hari bahagia kalian, dari persiapan sampai hari H.</p>
         </div>
 
-        <div className="card bg-white p-6 shadow-xl sm:p-8">
+        <div className="card bg-surface p-6 shadow-xl sm:p-8">
           {mode !== 'forgot' && (
             <div className="mb-6 grid grid-cols-2 rounded-full bg-sand p-1">
               {(['login', 'register'] as const).map((m) => (
@@ -85,7 +85,7 @@ export default function Auth() {
                   key={m}
                   type="button"
                   onClick={() => switchMode(m)}
-                  className={cn('rounded-full py-2 text-sm font-semibold transition', mode === m ? 'bg-white text-brand shadow-sm' : 'text-muted')}
+                  className={cn('rounded-full py-2 text-sm font-semibold transition', mode === m ? 'bg-surface text-brand shadow-sm' : 'text-muted')}
                 >
                   {m === 'login' ? 'Masuk' : 'Daftar'}
                 </button>
@@ -161,7 +161,7 @@ export function NewPassword({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <form
-        className="card w-full max-w-md bg-white p-8"
+        className="card w-full max-w-md bg-surface p-8"
         onSubmit={async (e) => {
           e.preventDefault()
           setBusy(true)

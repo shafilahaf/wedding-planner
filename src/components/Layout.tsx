@@ -9,18 +9,21 @@ import {
   LayoutGrid,
   MailCheck,
   Menu,
+  Moon,
   NotebookPen,
   Palette,
   PiggyBank,
   Settings,
   SquareCheckBig,
   Store,
+  Sun,
   TrendingDown,
   TrendingUp,
   Wallet,
 } from 'lucide-react'
 import { coupleName, savingsBalance, useStore, weddingDate } from '../store'
 import { useSync } from '../lib/sync'
+import { useTheme } from '../lib/theme'
 import { cn, daysUntil, fmtDate, relDay, rupiah, todayISO } from '../lib/utils'
 
 export const NAV = [
@@ -55,9 +58,9 @@ export default function Layout() {
   return (
     <div className="min-h-screen md:flex">
       {/* Sidebar (desktop) */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-white/60 px-4 py-6 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-surface/60 px-4 py-6 md:flex">
         <Link to="/" className="mb-8 flex items-center gap-3 px-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand text-white">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-rose text-on-brand">
             <Heart size={20} fill="currentColor" />
           </span>
           <span>
@@ -74,7 +77,7 @@ export default function Layout() {
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition',
-                  isActive ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-sand hover:text-ink',
+                  isActive ? 'bg-brand-soft font-semibold text-brand' : 'text-muted hover:bg-sand hover:text-ink',
                 )
               }
             >
@@ -94,7 +97,7 @@ export default function Layout() {
       </div>
 
       {/* Bottom nav (mobile) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         {MOBILE_NAV.map((n) => {
           const active =
             n.to === '/'
@@ -147,10 +150,10 @@ function TopBar({ title }: { title: string }) {
           className="flex items-center gap-2 rounded-full border border-gold/50 bg-gold-soft py-1.5 pr-1.5 pl-2 shadow-sm transition hover:border-gold"
           title="Tabungan nikah"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/25 text-[#9a6b12]">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/25 text-gold-ink">
             <Coins size={16} />
           </span>
-          <span className="text-sm font-semibold text-[#9a5a12] sm:text-base">{rupiah(balance)}</span>
+          <span className="text-sm font-semibold text-gold-ink sm:text-base">{rupiah(balance)}</span>
           {growth !== 0 && (
             <span
               className={cn(
@@ -165,9 +168,25 @@ function TopBar({ title }: { title: string }) {
           )}
         </Link>
         <SyncDot />
+        <ThemeToggle />
         <Notifications />
       </div>
     </header>
+  )
+}
+
+function ThemeToggle() {
+  const { dark, setMode } = useTheme()
+  const label = dark ? 'Mode terang' : 'Mode gelap'
+  return (
+    <button
+      onClick={() => setMode(dark ? 'light' : 'dark')}
+      title={label}
+      aria-label={label}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface shadow-sm transition hover:bg-sand"
+    >
+      {dark ? <Sun size={19} /> : <Moon size={19} />}
+    </button>
   )
 }
 
@@ -246,18 +265,18 @@ function Notifications() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white shadow-sm transition hover:bg-sand"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface shadow-sm transition hover:bg-sand"
         aria-label="Notifikasi"
       >
         <Bell size={20} />
         {items.length > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose px-1 text-[11px] font-bold text-white">
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose px-1 text-[11px] font-bold text-on-brand">
             {items.length}
           </span>
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-white shadow-xl">
+        <div className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
           <p className="border-b border-line px-4 py-3 font-semibold">Pengingat</p>
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">Semua aman. Tidak ada pengingat 🎉</p>}

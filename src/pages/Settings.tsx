@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Download, LogOut, Pencil, Settings as SettingsIcon, Trash2, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { signOut, useSync } from '../lib/sync'
+import { useTheme, type ThemeMode } from '../lib/theme'
 import { coupleName, exportData, useStore, type Data } from '../store'
-import { Button, Card, Field, Input, PageHeader } from '../components/ui'
+import { Button, Card, Chips, Field, Input, PageHeader } from '../components/ui'
 import { downloadFile, fmtLongDate, rupiah, todayISO } from '../lib/utils'
 import { EditProfile } from './Dashboard'
 
@@ -15,6 +16,7 @@ export default function Settings() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState('')
   const sync = useSync()
+  const theme = useTheme()
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ''))
   }, [])
@@ -75,6 +77,20 @@ export default function Settings() {
               <Pencil size={16} /> Ubah
             </Button>
           </div>
+        </Card>
+
+        <Card className="space-y-3 p-6">
+          <p className="eyebrow">Tampilan</p>
+          <Chips<ThemeMode>
+            value={theme.mode}
+            onChange={theme.setMode}
+            options={[
+              { value: 'system', label: 'Ikuti sistem' },
+              { value: 'light', label: 'Terang' },
+              { value: 'dark', label: 'Gelap' },
+            ]}
+          />
+          <p className="text-xs text-muted">Disimpan di perangkat ini saja.</p>
         </Card>
 
         <Card className="space-y-4 p-6">

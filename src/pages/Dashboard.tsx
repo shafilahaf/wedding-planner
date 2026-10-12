@@ -75,7 +75,7 @@ function Hero() {
       {profile.coverPhoto ? (
         <img src={profile.coverPhoto} alt="Foto pasangan" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#d8a48f] via-[#b9806a] to-[#5b3b2e]">
+        <div className="absolute inset-0 bg-gradient-to-br from-hero-from via-hero-via to-hero-to">
           <Heart className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[70%] text-white/20" size={140} fill="currentColor" />
         </div>
       )}

@@ -167,7 +167,7 @@ function TxEditor({ out, onClose, onSave }: { out: boolean; onClose: () => void;
           <p className="label">Dari / oleh</p>
           <div className="flex flex-wrap gap-2">
             {people.map((p) => (
-              <button key={p} type="button" onClick={() => setWho(who === p ? '' : p)} className={cn('rounded-full px-3.5 py-1.5 text-sm', who === p ? 'bg-brand text-white' : 'bg-sand text-muted')}>
+              <button key={p} type="button" onClick={() => setWho(who === p ? '' : p)} className={cn('rounded-full px-3.5 py-1.5 text-sm', who === p ? 'bg-brand text-on-brand' : 'bg-sand text-muted')}>
                 {p}
               </button>
             ))}

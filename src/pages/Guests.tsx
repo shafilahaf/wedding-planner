@@ -150,7 +150,7 @@ export default function Guests() {
             const r = RSVP.find((x) => x.value === g.rsvp)!
             return (
               <div key={g.id} className="group flex items-center gap-3 px-4 py-3.5 sm:px-5">
-                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold', g.side === 'pria' ? 'bg-sky-50 text-sky-700' : g.side === 'wanita' ? 'bg-brand-soft text-brand' : 'bg-gold-soft text-[#9a6b12]')}>
+                <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold', g.side === 'pria' ? 'bg-sky-50 text-sky-700' : g.side === 'wanita' ? 'bg-brand-soft text-brand' : 'bg-gold-soft text-gold-ink')}>
                   {g.name.charAt(0).toUpperCase()}
                 </span>
                 <button className="min-w-0 flex-1 text-left" onClick={() => setEditing(g)}>
