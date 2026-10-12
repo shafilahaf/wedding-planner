@@ -4,12 +4,16 @@ import { supabase } from './supabase'
 
 export type SyncStatus = 'loading' | 'saving' | 'saved' | 'offline'
 
-export const useSync = create<{ status: SyncStatus; error: string }>(() => ({ status: 'loading', error: '' }))
+export const useSync = create<{ status: SyncStatus; error: string; plannerId: string }>(() => ({ status: 'loading', error: '', plannerId: '' }))
 
+/** Which planner the local cache holds. */
 const OWNER_KEY = 'wedding-planner-owner'
+/** Last known planner per account, so a partner still opens the shared planner offline. */
+const plannerKey = (uid: string) => `wedding-planner-planner-of-${uid}`
 const SAVE_DELAY = 1200
 
-let userId: string | null = null
+// Planner row we read and write: our own, or the owner's when we are their partner.
+let plannerId: string | null = null
 let lastRemoteAt = ''
 let dirty = false
 let saving = false
@@ -21,20 +25,32 @@ let generation = 0
 
 const setStatus = (status: SyncStatus, error = '') => useSync.setState({ status, error })
 
-const getOwner = () => {
+const getItem = (key: string) => {
   try {
-    return localStorage.getItem(OWNER_KEY)
+    return localStorage.getItem(key)
   } catch {
     return null
   }
 }
-const setOwner = (id: string | null) => {
+const setItem = (key: string, value: string | null) => {
   try {
-    if (id) localStorage.setItem(OWNER_KEY, id)
-    else localStorage.removeItem(OWNER_KEY)
+    if (value) localStorage.setItem(key, value)
+    else localStorage.removeItem(key)
   } catch {
     /* storage blocked */
   }
+}
+const getOwner = () => getItem(OWNER_KEY)
+const setOwner = (id: string | null) => setItem(OWNER_KEY, id)
+
+/** Works before the partner migration is applied too: then every account uses its own planner. */
+async function resolvePlanner(uid: string) {
+  const { data, error } = await supabase.rpc('my_planner_id')
+  if (!error && typeof data === 'string') {
+    setItem(plannerKey(uid), data)
+    return data
+  }
+  return getItem(plannerKey(uid)) ?? uid
 }
 
 function applyRemote(data: Partial<Data>) {
@@ -44,12 +60,12 @@ function applyRemote(data: Partial<Data>) {
 }
 
 async function push() {
-  if (!userId || saving) return
+  if (!plannerId || saving) return
   clearTimeout(timer)
   saving = true
   dirty = false
   setStatus('saving')
-  const { data, error } = await supabase.from('planner').upsert({ user_id: userId, data: exportData() }).select('updated_at').single()
+  const { data, error } = await supabase.from('planner').upsert({ user_id: plannerId, data: exportData() }).select('updated_at').single()
   saving = false
   if (error) {
     dirty = true
@@ -69,8 +85,8 @@ function schedule() {
 
 /** Pick up changes made on another device. */
 async function pull() {
-  if (!userId || dirty || saving) return
-  const { data, error } = await supabase.from('planner').select('data, updated_at').eq('user_id', userId).maybeSingle()
+  if (!plannerId || dirty || saving) return
+  const { data, error } = await supabase.from('planner').select('data, updated_at').eq('user_id', plannerId).maybeSingle()
   if (error || !data || dirty || saving) return
   if (data.updated_at > lastRemoteAt) {
     lastRemoteAt = data.updated_at
@@ -85,18 +101,22 @@ async function pull() {
 export async function startSync(uid: string) {
   stopSync()
   const gen = generation
-  userId = uid
   setStatus('loading')
 
-  const owner = getOwner()
-  // Local cache belongs to someone else: never show or upload their data.
-  if (owner && owner !== uid) applyRemote(emptyData())
+  const pid = await resolvePlanner(uid)
+  if (gen !== generation) return
+  plannerId = pid
+  useSync.setState({ plannerId: pid })
 
-  const { data, error } = await supabase.from('planner').select('data, updated_at').eq('user_id', uid).maybeSingle()
+  const owner = getOwner()
+  // Local cache holds another planner: never show or upload it here.
+  if (owner && owner !== pid) applyRemote(emptyData())
+
+  const { data, error } = await supabase.from('planner').select('data, updated_at').eq('user_id', pid).maybeSingle()
   if (gen !== generation) return
   if (error) {
-    // Offline: keep working on this user's local copy and retry saving later.
-    if (owner !== uid) throw error
+    // Offline: keep working on the local copy of this planner and retry saving later.
+    if (owner !== pid) throw error
     setStatus('offline', error.message)
     dirty = true
     schedule()
@@ -109,7 +129,7 @@ export async function startSync(uid: string) {
     await push()
     if (gen !== generation) return
   }
-  setOwner(uid)
+  setOwner(pid)
 
   const unsub = useStore.subscribe(() => {
     if (applyingRemote) return
@@ -123,11 +143,17 @@ export async function startSync(uid: string) {
     } else pull()
   }
   const onOnline = () => (dirty ? push() : pull())
+  // The partner's saves show up without waiting for a focus/visibility change.
+  const channel = supabase
+    .channel(`planner:${pid}`)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'planner', filter: `user_id=eq.${pid}` }, () => pull())
+    .subscribe()
   document.addEventListener('visibilitychange', onVisible)
   window.addEventListener('focus', pull)
   window.addEventListener('online', onOnline)
   cleanup = () => {
     unsub()
+    supabase.removeChannel(channel)
     document.removeEventListener('visibilitychange', onVisible)
     window.removeEventListener('focus', pull)
     window.removeEventListener('online', onOnline)
@@ -139,7 +165,7 @@ export function stopSync() {
   cleanup?.()
   cleanup = undefined
   clearTimeout(timer)
-  userId = null
+  plannerId = null
   lastRemoteAt = ''
   dirty = false
 }

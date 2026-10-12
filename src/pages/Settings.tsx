@@ -7,6 +7,7 @@ import { coupleName, exportData, useStore, type Data } from '../store'
 import { Button, Card, Chips, Field, Input, PageHeader } from '../components/ui'
 import { downloadFile, fmtLongDate, rupiah, todayISO } from '../lib/utils'
 import { EditProfile } from './Dashboard'
+import PartnerCard from '../components/PartnerCard'
 
 export default function Settings() {
   const profile = useStore((s) => s.profile)
@@ -15,10 +16,14 @@ export default function Settings() {
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState('')
+  const [myId, setMyId] = useState('')
   const sync = useSync()
   const theme = useTheme()
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ''))
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? '')
+      setMyId(data.user?.id ?? '')
+    })
   }, [])
 
   const backup = () => {
@@ -61,6 +66,8 @@ export default function Settings() {
             <LogOut size={16} /> Keluar
           </Button>
         </Card>
+
+        {myId && <PartnerCard myId={myId} />}
 
         <Card className="p-6">
           <div className="flex items-start justify-between gap-4">
