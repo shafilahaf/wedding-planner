@@ -83,7 +83,8 @@ create policy "planner_delete_own" on public.planner
 
 drop table if exists public.chat_members cascade;
 drop table if exists public.chat_rooms cascade;
-drop function if exists public.is_chat_member(uuid);
+-- cascade: the old chat_messages policies use it; they are recreated below.
+drop function if exists public.is_chat_member(uuid) cascade;
 
 create table if not exists public.chat_messages (
   id bigint generated always as identity primary key,
