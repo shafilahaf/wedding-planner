@@ -19,6 +19,7 @@ import Rundown from './pages/Rundown'
 import Seserahan from './pages/Seserahan'
 import Savings from './pages/Savings'
 import Notes from './pages/Notes'
+import Chat from './pages/Chat'
 import Settings from './pages/Settings'
 import More from './pages/More'
 
@@ -81,6 +82,7 @@ function App() {
             <Route path="seserahan" element={<Seserahan />} />
             <Route path="tabungan" element={<Savings />} />
             <Route path="catatan" element={<Notes />} />
+            <Route path="chat" element={<Chat />} />
             <Route path="pengaturan" element={<Settings />} />
             <Route path="lainnya" element={<More />} />
             <Route path="*" element={<Navigate to="/" replace />} />
