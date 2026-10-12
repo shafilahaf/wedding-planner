@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   MailCheck,
   Menu,
+  MessagesSquare,
   Moon,
   NotebookPen,
   Palette,
@@ -37,6 +38,7 @@ export const NAV = [
   { to: '/seserahan', label: 'Seserahan & Mahar', icon: Gift },
   { to: '/tabungan', label: 'Tabungan', icon: PiggyBank },
   { to: '/catatan', label: 'Catatan', icon: NotebookPen },
+  { to: '/chat', label: 'Chat', icon: MessagesSquare },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings },
 ]
 
