@@ -43,7 +43,7 @@ export default function Vendors() {
           {VENDOR_CATEGORIES.filter((c) => c !== 'Lainnya').map((c) => {
             const ok = booked.some((v) => v.category === c)
             return (
-              <button key={c} onClick={() => setCat(cat === c ? 'semua' : c)} className={cn('rounded-full border px-3 py-1.5 text-sm transition', ok ? 'border-sage/30 bg-sage-soft text-sage' : 'border-line bg-white text-muted', cat === c && 'ring-2 ring-brand')}>
+              <button key={c} onClick={() => setCat(cat === c ? 'semua' : c)} className={cn('rounded-full border px-3 py-1.5 text-sm transition', ok ? 'border-sage/30 bg-sage-soft text-sage' : 'border-line bg-surface text-muted', cat === c && 'ring-2 ring-brand')}>
                 {ok ? '✓ ' : ''}
                 {c}
               </button>

@@ -32,7 +32,7 @@ export default function Notes() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[280px_1fr]">
           <div className="space-y-2">
             {sorted.map((n) => (
-              <button key={n.id} onClick={() => setActiveId(n.id)} className={cn('w-full rounded-2xl border p-4 text-left transition', n.id === activeId ? 'border-brand/40 bg-brand-soft/40' : 'border-line bg-white hover:bg-sand/50')}>
+              <button key={n.id} onClick={() => setActiveId(n.id)} className={cn('w-full rounded-2xl border p-4 text-left transition', n.id === activeId ? 'border-brand/40 bg-brand-soft/40' : 'border-line bg-surface hover:bg-sand/50')}>
                 <p className="truncate font-medium">{n.title || 'Tanpa judul'}</p>
                 <p className="mt-0.5 line-clamp-2 text-sm text-muted">{n.body || '…'}</p>
                 <p className="mt-1 text-xs text-muted">{new Date(n.updatedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>

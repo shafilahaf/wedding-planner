@@ -31,7 +31,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode; rese
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
         <p className="font-serif text-2xl">Halaman gagal dimuat</p>
         <p className="mt-2 max-w-sm text-sm break-words text-muted">{error.message}</p>
-        <button className="mt-4 rounded-full bg-brand px-5 py-2.5 text-base text-white" onClick={() => location.reload()}>
+        <button className="mt-4 rounded-full bg-brand px-5 py-2.5 text-base text-on-brand" onClick={() => location.reload()}>
           Muat ulang
         </button>
       </div>

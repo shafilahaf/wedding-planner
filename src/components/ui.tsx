@@ -18,7 +18,7 @@ export function Button({
         size === 'sm' && 'px-3.5 py-1.5 text-sm',
         size === 'md' && 'px-5 py-2.5 text-[15px]',
         size === 'lg' && 'px-6 py-3 text-base',
-        variant === 'primary' && 'bg-brand text-white shadow-sm hover:bg-brand-dark',
+        variant === 'primary' && 'bg-brand text-on-brand shadow-sm shadow-brand/25 hover:bg-brand-dark',
         variant === 'soft' && 'bg-sand text-ink hover:bg-line',
         variant === 'outline' && 'border border-brand/60 bg-brand-soft/40 text-brand hover:bg-brand-soft',
         variant === 'ghost' && 'text-muted hover:bg-sand hover:text-ink',
@@ -206,7 +206,7 @@ export function Badge({ children, tone = 'neutral', className }: { children: Rea
         tone === 'brand' && 'bg-brand-soft text-brand',
         tone === 'green' && 'bg-sage-soft text-sage',
         tone === 'red' && 'bg-red-50 text-red-700',
-        tone === 'gold' && 'bg-gold-soft text-[#9a6b12]',
+        tone === 'gold' && 'bg-gold-soft text-gold-ink',
         tone === 'blue' && 'bg-sky-50 text-sky-700',
         className,
       )}
@@ -254,7 +254,7 @@ export function Chips<T extends string>({
           onClick={() => onChange(o.value)}
           className={cn(
             'rounded-full px-4 py-2 text-sm font-medium tracking-wide whitespace-nowrap transition',
-            value === o.value ? 'bg-brand text-white' : 'bg-sand text-muted hover:bg-line',
+            value === o.value ? 'bg-brand text-on-brand' : 'bg-sand text-muted hover:bg-line',
           )}
         >
           {o.label}

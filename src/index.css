@@ -1,22 +1,64 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
+  /* Display face for headings (kept under the `serif` name so markup stays the same). */
+  --font-serif: 'Bricolage Grotesque', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 
-  --color-cream: #faf8f4;
-  --color-sand: #f3ede4;
-  --color-line: #e9e1d6;
-  --color-ink: #2a211b;
-  --color-muted: #7c6f64;
-  --color-brand: #bc5b3a;
-  --color-brand-dark: #a14a2c;
-  --color-brand-soft: #f7e7df;
-  --color-gold: #d9a441;
-  --color-gold-soft: #fbf0d9;
-  --color-rose: #bd5468;
-  --color-sage: #4f7a5a;
-  --color-sage-soft: #e3efe5;
+  --color-cream: #f7f6fb;
+  --color-surface: #ffffff;
+  --color-sand: #efedf6;
+  --color-line: #e3e0ee;
+  --color-ink: #16132a;
+  --color-muted: #6c6884;
+  --color-brand: #6a4cf0;
+  --color-brand-dark: #5535dc;
+  --color-brand-soft: #ece8ff;
+  --color-on-brand: #ffffff;
+  --color-gold: #f2b134;
+  --color-gold-soft: #fff4d9;
+  --color-gold-ink: #8a5800;
+  --color-rose: #f0457d;
+  --color-sage: #138a5c;
+  --color-sage-soft: #daf4e8;
+  --color-dots: #dcd8ea;
+  --color-hero-from: #c4b5fd;
+  --color-hero-via: #f0457d;
+  --color-hero-to: #3b2a8c;
+}
+
+/* Dark theme: same tokens, re-pointed. Tailwind's red/sky shades used for
+   warnings and the groom's side are remapped so they read on dark surfaces. */
+.dark {
+  color-scheme: dark;
+  --color-cream: #0e0d16;
+  --color-surface: #17151f;
+  --color-sand: #211e2e;
+  --color-line: #2c2940;
+  --color-ink: #f1effa;
+  --color-muted: #9d99b5;
+  --color-brand: #8467ff;
+  --color-brand-dark: #7254f5;
+  --color-brand-soft: #262046;
+  --color-gold: #f2b134;
+  --color-gold-soft: #2c2412;
+  --color-gold-ink: #f6c766;
+  --color-rose: #ff6b9a;
+  --color-sage: #4cd39b;
+  --color-sage-soft: #13291f;
+  --color-dots: #2a2738;
+  --color-hero-from: #4c3aa8;
+  --color-hero-via: #a1306b;
+  --color-hero-to: #120f24;
+  --color-red-50: #2d1418;
+  --color-red-100: #3d1a20;
+  --color-red-200: #5a2129;
+  --color-red-600: #ff8a8a;
+  --color-red-700: #ff9d9d;
+  --color-sky-50: #10243a;
+  --color-sky-700: #7cc4ff;
 }
 
 html,
@@ -27,6 +69,16 @@ body,
 
 body {
   @apply bg-cream text-ink font-sans antialiased;
+  /* Soft colour glow behind everything. */
+  background-image:
+    radial-gradient(60rem 30rem at 100% -10%, color-mix(in oklab, var(--color-brand) 10%, transparent), transparent 70%),
+    radial-gradient(40rem 24rem at -10% 110%, color-mix(in oklab, var(--color-rose) 7%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+
+h1,
+.font-serif {
+  letter-spacing: -0.025em;
 }
 
 input,
@@ -37,7 +89,7 @@ textarea {
 
 @layer components {
 .input {
-  @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-muted/60 focus:border-brand focus:ring-2 focus:ring-brand/15;
+  @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-muted/60 focus:border-brand focus:ring-2 focus:ring-brand/15;
 }
 
 .label {
@@ -45,11 +97,11 @@ textarea {
 }
 
 .card {
-  @apply rounded-2xl border border-line bg-white/80 shadow-[0_1px_2px_rgba(42,33,27,0.04)];
+  @apply rounded-3xl border border-line bg-surface/85 shadow-[0_1px_2px_rgba(22,19,42,0.04),0_8px_24px_-12px_rgba(22,19,42,0.08)];
 }
 
 .eyebrow {
-  @apply text-xs font-medium tracking-[0.2em] text-muted uppercase;
+  @apply text-xs font-semibold tracking-[0.16em] text-muted uppercase;
 }
 
 }
@@ -62,6 +114,6 @@ textarea {
 }
 
 .dot-grid {
-  background-image: radial-gradient(circle, #e2d8cb 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--color-dots) 1px, transparent 1px);
   background-size: 22px 22px;
 }

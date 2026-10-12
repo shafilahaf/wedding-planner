@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Wedding Planner',
   webDir: 'dist',
   android: {
-    backgroundColor: '#faf8f4',
+    backgroundColor: '#f7f6fb',
   },
 }
 

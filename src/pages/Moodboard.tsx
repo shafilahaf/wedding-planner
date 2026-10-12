@@ -87,7 +87,7 @@ export default function Moodboard() {
           <span className={cn('h-2 w-2 rounded-full', sync === 'offline' ? 'bg-red-500' : sync === 'saved' ? 'bg-sage' : 'animate-pulse bg-gold')} />
           {sync === 'offline' ? 'Belum tersinkron' : sync === 'saved' ? 'Tersimpan otomatis' : 'Menyimpan…'}
         </Badge>
-        <Button variant="soft" className="border border-line bg-white" onClick={() => setMuseOpen(true)}>
+        <Button variant="soft" className="border border-line bg-surface" onClick={() => setMuseOpen(true)}>
           <Sparkles size={18} className="text-brand" /> Inspirasi palet
         </Button>
         <IconButton onClick={duplicate} title="Duplikat board">
@@ -122,7 +122,7 @@ export default function Moodboard() {
           <Palette size={18} className="text-brand" /> Palet Warna
         </Button>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => (onFiles(e.target.files), (e.target.value = ''))} />
-        <div className="ml-auto flex items-center gap-1 rounded-full border border-line bg-white px-1.5 py-1 shadow-sm">
+        <div className="ml-auto flex items-center gap-1 rounded-full border border-line bg-surface px-1.5 py-1 shadow-sm">
           <IconButton onClick={() => setZoom((z) => Math.min(4, z + 1))} disabled={zoom === 4} aria-label="Perkecil">
             <Minus size={16} />
           </IconButton>
@@ -180,7 +180,7 @@ export default function Moodboard() {
             {PALETTE_PRESETS.map((p) => (
               <button
                 key={p.name}
-                className="rounded-2xl border border-line bg-white p-4 text-left transition hover:border-brand hover:shadow"
+                className="rounded-2xl border border-line bg-surface p-4 text-left transition hover:border-brand hover:shadow"
                 onClick={() => {
                   upsert({ id: uid(), type: 'palette', tag: 'Dekorasi', title: p.name, text: p.desc, colors: p.colors, createdAt: Date.now() })
                   setMuseOpen(false)
@@ -229,12 +229,12 @@ function RenameBoard({ board, onClose }: { board: Board; onClose: () => void }) 
 
 function MoodCard({ item, onEdit, onDelete }: { item: MoodItem; onEdit: () => void; onDelete: () => void }) {
   return (
-    <div className="group relative break-inside-avoid overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+    <div className="group relative break-inside-avoid overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
       <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-        <button onClick={onEdit} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow hover:bg-white" aria-label="Ubah">
+        <button onClick={onEdit} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-ink shadow hover:bg-surface" aria-label="Ubah">
           <Pencil size={14} />
         </button>
-        <button onClick={onDelete} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow hover:bg-white" aria-label="Hapus">
+        <button onClick={onDelete} className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-ink shadow hover:bg-surface" aria-label="Hapus">
           <Trash2 size={14} />
         </button>
       </div>
@@ -344,7 +344,7 @@ function ItemEditor({
             <p className="label">Warna</p>
             {f.colors!.map((c, i) => (
               <div key={i} className="flex items-center gap-2">
-                <input type="color" value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value })} className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border border-line bg-white p-1" />
+                <input type="color" value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value })} className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border border-line bg-surface p-1" />
                 <Input value={c.name} onChange={(e) => setColor(i, { name: e.target.value })} />
                 <Input className="w-28 shrink-0" value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value })} />
                 <IconButton disabled={f.colors!.length <= 1} onClick={() => setF({ ...f, colors: f.colors!.filter((_, j) => j !== i) })}>

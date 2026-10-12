@@ -59,7 +59,7 @@ function App() {
     return (
       <Splash>
         <p className="max-w-sm text-center text-base text-muted">Gagal memuat data: {loadError}</p>
-        <button className="mt-4 rounded-full bg-brand px-5 py-2.5 text-base text-white" onClick={() => location.reload()}>
+        <button className="mt-4 rounded-full bg-brand px-5 py-2.5 text-base text-on-brand" onClick={() => location.reload()}>
           Coba lagi
         </button>
       </Splash>
