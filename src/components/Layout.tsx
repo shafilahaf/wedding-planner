@@ -43,7 +43,9 @@ export default function Layout() {
   const profile = useStore((s) => s.profile)
   const { pathname } = useLocation()
 
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   const current = NAV.find((n) => (n.to === '/' ? pathname === '/' : pathname.startsWith(n.to)))
   useEffect(() => {
