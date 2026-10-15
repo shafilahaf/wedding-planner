@@ -26,7 +26,8 @@
     --body: "Zen Kaku Gothic New", "Hiragino Sans", "Segoe UI", system-ui, sans-serif;
     color-scheme: dark;
   }
-  html { background: var(--void); }
+  [hidden] { display: none !important; }
+  html { background: var(--void); overflow-x: clip; }
   html.locked { overflow: hidden; }
   body {
     background: var(--void);
@@ -51,7 +52,7 @@
 
   /* ---------- Scroll column ---------- */
   main {
-    position: relative; z-index: 2;
+    position: relative; z-index: 2; overflow-x: clip;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-block: 0 6rem;
@@ -232,7 +233,71 @@
   .seal-box .to { font-size: 0.8rem; color: var(--paper-dim); letter-spacing: 0.1em; }
   .seal-box .guest { font-family: var(--display); font-size: 1.3rem; font-weight: 700; }
 
+  /* ---------- Marumado (round window) photo ---------- */
+  .hero { display: grid; gap: 1rem; justify-items: center; text-align: center; width: 100%; max-width: 32rem; }
+  .marumado {
+    margin: 0; position: relative;
+    width: min(76vw, 21rem); max-width: 100%; aspect-ratio: 1;
+    border-radius: 50%; padding: 10px; box-sizing: border-box;
+    background: repeating-conic-gradient(from 8deg, var(--wood) 0 10deg, #6b4126 10deg 20deg);
+    box-shadow: 0 0 0 2px var(--gold), 0 0 0 7px var(--void), 0 0 0 8px var(--line), 0 0 90px rgba(255, 176, 90, 0.35);
+  }
+  .marumado img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; background: var(--lacquer-solid); }
+  .marumado .ring {
+    position: absolute; inset: -22px; border-radius: 50%;
+    border: 1px dashed rgba(212, 166, 79, 0.55);
+    animation: spin 80s linear infinite; pointer-events: none;
+  }
+  .marumado.small { width: 10rem; padding: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .names.inline { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 0 0.3em; font-size: clamp(2.8rem, 13vw, 4.6rem); margin-top: 0.25rem; }
+  .names.inline .amp { font-size: 0.6em; }
+
+  /* ---------- Story ---------- */
+  .story { list-style: none; margin: 0; padding: 0 0 0 1.25rem; display: grid; gap: 1.4rem; border-left: 1px solid var(--line); }
+  .story li { position: relative; display: grid; gap: 0.2rem; }
+  .story li::before {
+    content: ""; position: absolute; left: calc(-1.25rem - 6px); top: 0.45rem;
+    width: 10px; height: 10px; background: var(--crimson); transform: rotate(45deg);
+    box-shadow: 0 0 0 3px var(--void);
+  }
+  .story .when { font-size: 0.75rem; letter-spacing: 0.25em; color: var(--gold); }
+
+  /* ---------- Gallery ---------- */
+  .gallery {
+    display: flex; gap: 0.9rem; overflow-x: auto; scroll-snap-type: x mandatory;
+    margin-inline: -1.5rem; padding: 0.25rem 1.5rem 0.75rem;
+    scrollbar-width: thin; scrollbar-color: var(--gold) transparent;
+  }
+  .frame {
+    flex: 0 0 74%; scroll-snap-align: center; position: relative;
+    aspect-ratio: 4 / 5; max-width: 100%; padding: 0; cursor: zoom-in;
+    border: 6px solid var(--wood); outline: 1px solid var(--gold); outline-offset: 2px;
+    background: var(--lacquer-solid);
+    transition: transform 0.35s ease;
+  }
+  .frame:hover { transform: translateY(-3px); }
+  .frame:focus-visible { outline: 2px solid var(--wisteria); }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .frame .fno {
+    position: absolute; top: 0.5rem; left: 0.5rem; width: 1.9rem; height: 1.9rem;
+    display: grid; place-items: center; background: var(--crimson); color: var(--paper);
+    font-family: var(--display); font-weight: 800; font-size: 0.95rem;
+  }
+  dialog#lightbox {
+    border: 1px solid var(--gold); background: var(--void); color: var(--paper);
+    padding: 0.75rem; width: min(92vw, 34rem); max-width: 100%; box-sizing: border-box;
+  }
+  dialog#lightbox::backdrop { background: rgba(6, 3, 8, 0.88); }
+  dialog#lightbox img { width: 100%; max-height: 74svh; object-fit: contain; display: block; margin-bottom: 0.75rem; }
+
+  /* ---------- Reveal: cards slide in like a fusuma (visible even without JS) ---------- */
+  .card { transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.9s; }
+  .card.pre { transform: translateY(28px) scale(0.98); opacity: 0.3; }
+
   @media (prefers-reduced-motion: reduce) {
+    .card, .card.pre { transition: none; transform: none; opacity: 1; }
+    .marumado .ring { animation: none; }
     .door, .seal-box { transition-duration: 0.01s; }
     .scroll-hint i, .sound[aria-pressed="true"] { animation: none; }
   }
@@ -255,18 +320,22 @@
       <p class="guest" id="guestName">Tamu Undangan</p>
     </div>
     <button class="btn" id="openBtn" type="button">Buka Undangan</button>
-    <p class="muted small">Suara biwa akan diputar. Bisa dimatikan kapan saja.</p>
+    <p class="muted small">Musik akan diputar. Bisa dimatikan lewat tombol 琵.</p>
   </div>
 </div>
 
-<button class="sound" id="soundBtn" type="button" aria-pressed="false" aria-label="Putar suara biwa" hidden>琵</button>
+<button class="sound" id="soundBtn" type="button" aria-pressed="false" aria-label="Putar musik" hidden>琵</button>
 
 <main>
   <section data-form="0">
-    <div class="hero card" style="background:transparent;border-color:transparent;backdrop-filter:none">
+    <div class="hero">
       <div class="kanji">無限城 · 結婚</div>
+      <figure class="marumado">
+        <span class="ring" aria-hidden="true"></span>
+        <img src="foto/prewedding-1.jpg" data-ph="0" alt="Foto prewedding Fila dan Tama">
+      </figure>
+      <h1 class="names inline">Fila<span class="amp">&amp;</span>Tama</h1>
       <p class="muted small" style="letter-spacing:.3em;text-transform:uppercase">Kami akan menikah</p>
-      <h1 class="names">Fila<span class="amp">&amp;</span>Tama</h1>
       <p class="date">12 · 12 · 2026</p>
       <div class="scroll-hint">Gulir untuk turun ke dalam kastil<i></i></div>
     </div>
@@ -305,7 +374,46 @@
 
   <section data-form="3">
     <div class="card">
-      <p class="form-no">弐ノ型 <span>Waktu</span></p>
+      <p class="form-no">弐ノ型 <span>Kisah Kami</span></p>
+      <h2>Lorong yang akhirnya bertemu</h2>
+      <ol class="story">
+        <li>
+          <span class="when ph">[TAHUN]</span>
+          <h3>Pertama bertemu</h3>
+          <p class="muted small"><span class="ph">[Ceritakan singkat di mana dan bagaimana kalian pertama bertemu.]</span></p>
+        </li>
+        <li>
+          <span class="when ph">[TAHUN]</span>
+          <h3>Mulai berjalan bersama</h3>
+          <p class="muted small"><span class="ph">[Momen kalian memutuskan untuk serius.]</span></p>
+        </li>
+        <li>
+          <span class="when ph">[TAHUN]</span>
+          <h3>Lamaran</h3>
+          <p class="muted small"><span class="ph">[Cerita lamaran dan keluarga yang merestui.]</span></p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section data-form="4">
+    <div class="card">
+      <p class="form-no">参ノ型 <span>Galeri</span></p>
+      <h2>Potret dari dalam kastil</h2>
+      <div class="gallery" id="gallery">
+        <button class="frame" type="button" aria-label="Perbesar foto 1"><img src="foto/prewedding-2.jpg" data-ph="1" alt="Foto prewedding 1"><span class="fno">壱</span></button>
+        <button class="frame" type="button" aria-label="Perbesar foto 2"><img src="foto/prewedding-3.jpg" data-ph="2" alt="Foto prewedding 2"><span class="fno">弐</span></button>
+        <button class="frame" type="button" aria-label="Perbesar foto 3"><img src="foto/prewedding-4.jpg" data-ph="3" alt="Foto prewedding 3"><span class="fno">参</span></button>
+        <button class="frame" type="button" aria-label="Perbesar foto 4"><img src="foto/prewedding-5.jpg" data-ph="4" alt="Foto prewedding 4"><span class="fno">肆</span></button>
+        <button class="frame" type="button" aria-label="Perbesar foto 5"><img src="foto/prewedding-6.jpg" data-ph="5" alt="Foto prewedding 5"><span class="fno">伍</span></button>
+      </div>
+      <p class="muted small">Geser untuk melihat foto lainnya, ketuk untuk memperbesar.</p>
+    </div>
+  </section>
+
+  <section data-form="5">
+    <div class="card">
+      <p class="form-no">肆ノ型 <span>Waktu</span></p>
       <h2>Sabtu, 12 Desember 2026</h2>
       <div class="countdown" aria-live="off">
         <div><b id="cdD">--</b><small>Hari</small></div>
@@ -330,18 +438,18 @@
     </div>
   </section>
 
-  <section data-form="4">
+  <section data-form="6">
     <div class="card">
-      <p class="form-no">参ノ型 <span>Lokasi</span></p>
+      <p class="form-no">伍ノ型 <span>Lokasi</span></p>
       <h2>Ikuti suara biwa ke sini</h2>
       <p class="muted">Tidak perlu tersesat di kastil. Buka peta di bawah untuk petunjuk arah ke tempat acara.</p>
       <div><a class="btn" href="https://maps.google.com" target="_blank" rel="noopener">Buka Google Maps</a></div>
     </div>
   </section>
 
-  <section data-form="5">
+  <section data-form="7">
     <div class="card">
-      <p class="form-no">肆ノ型 <span>RSVP &amp; Ucapan</span></p>
+      <p class="form-no">陸ノ型 <span>RSVP &amp; Ucapan</span></p>
       <h2>Konfirmasi kehadiran</h2>
       <form id="rsvp" novalidate>
         <label for="fName">Nama
@@ -371,9 +479,9 @@
     </div>
   </section>
 
-  <section data-form="6">
+  <section data-form="8">
     <div class="card">
-      <p class="form-no">伍ノ型 <span>Amplop Digital</span></p>
+      <p class="form-no">漆ノ型 <span>Amplop Digital</span></p>
       <h2>Tanda kasih</h2>
       <p class="muted">Doa restu kamu sudah lebih dari cukup. Jika ingin memberi tanda kasih, bisa lewat rekening berikut.</p>
       <div class="account">
@@ -384,16 +492,25 @@
     </div>
   </section>
 
-  <section data-form="7">
+  <section data-form="9">
     <div class="card closing">
-      <div class="seal">結</div>
+      <figure class="marumado small" style="margin:0 auto">
+        <img src="foto/prewedding-7.jpg" data-ph="6" alt="Foto Fila dan Tama">
+      </figure>
       <p class="big">Terima kasih</p>
       <p class="muted">Merupakan kehormatan bagi kami apabila kamu berkenan hadir dan memberikan doa restu.</p>
       <p style="font-family:var(--display);font-size:1.4rem;letter-spacing:.1em">Fila &amp; Tama</p>
+      <div class="seal">結</div>
       <p class="muted small" style="letter-spacing:.3em">鬼殺隊より愛をこめて</p>
     </div>
   </section>
 </main>
+
+<dialog id="lightbox" aria-label="Foto prewedding">
+  <img id="lbImg" alt="">
+  <button class="btn ghost" type="button" id="lbClose">Tutup</button>
+</dialog>
+<audio id="theme" src="theme.mp3" loop preload="auto"></audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -409,7 +526,7 @@
 
   /* ======================= Biwa (Karplus–Strong) ======================= */
   const Biwa = (() => {
-    let ctx = null, master = null, wet = null, buffers = [], on = false, loopTimer = null;
+    let ctx = null, master = null, wet = null, buffers = [], on = false, ambientOn = true, loopTimer = null;
     // D minor-ish "in" scale, the sound of Nakime's biwa
     const freqs = [146.83, 155.56, 196.0, 220.0, 233.08, 293.66, 311.13, 392.0, 440.0];
     function pluckBuffer(f, seconds, decay) {
@@ -466,7 +583,7 @@
     }
     function ambient() {
       clearTimeout(loopTimer);
-      if (!on) return;
+      if (!on || !ambientOn) return;
       const r = Math.random();
       if (r < 0.25) { const n = 2 + Math.floor(Math.random() * 3); const base = Math.floor(Math.random() * 5); for (let i = 0; i < n; i++) pluck(base + i, i * 0.11, 0.45); }
       else if (r < 0.4) { const k = Math.floor(Math.random() * 9); for (let i = 0; i < 5; i++) pluck(k, i * 0.07, 0.3 - i * 0.04); }
@@ -478,7 +595,9 @@
       if (on) { init(); if (ctx && ctx.state === 'suspended') ctx.resume(); ambient(); }
       else clearTimeout(loopTimer);
     }
-    return { setOn, strike, get on() { return on; } };
+    function setAmbient(v) { ambientOn = v; if (v) ambient(); else clearTimeout(loopTimer); }
+    function setLevel(v) { if (master) master.gain.value = v; }
+    return { setOn, setAmbient, setLevel, strike, get on() { return on; } };
   })();
 
   /* ======================= Three.js Infinity Castle ======================= */
@@ -774,19 +893,42 @@
   const gate = document.getElementById('gate');
   const soundBtn = document.getElementById('soundBtn');
   document.documentElement.classList.add('locked');
+  /* theme.mp3 next to this page; without it the synthesized biwa plays alone */
+  const theme = document.getElementById('theme');
+  let themeOk = true, fadeRaf = 0;
+  function useBiwaOnly() { themeOk = false; Biwa.setLevel(0.55); if (Biwa.on) Biwa.setAmbient(true); }
+  theme.addEventListener('error', useBiwaOnly);
+  function fadeTo(vol, ms, done) {
+    cancelAnimationFrame(fadeRaf);
+    const v0 = theme.volume, t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      try { theme.volume = v0 + (vol - v0) * k; } catch (e) {}
+      if (k < 1) fadeRaf = requestAnimationFrame(step); else if (done) done();
+    };
+    fadeRaf = requestAnimationFrame(step);
+  }
+  function setSound(v) {
+    Biwa.setOn(v);
+    soundBtn.setAttribute('aria-pressed', String(v));
+    soundBtn.setAttribute('aria-label', v ? 'Matikan musik' : 'Putar musik');
+    if (!v) { fadeTo(0, 400, () => theme.pause()); return; }
+    if (!themeOk) { Biwa.setAmbient(true); return; }
+    Biwa.setAmbient(false); Biwa.setLevel(0.3);
+    try { theme.volume = 0; } catch (e) {}
+    const p = theme.play();
+    if (p && p.then) p.then(() => fadeTo(0.75, 2500), useBiwaOnly);
+    else fadeTo(0.75, 2500);
+  }
   document.getElementById('openBtn').addEventListener('click', () => {
-    Biwa.setOn(true);
-    soundBtn.hidden = false; soundBtn.setAttribute('aria-pressed', 'true');
+    soundBtn.hidden = false;
+    setSound(true);
     Biwa.strike();
     gate.classList.add('open');
     if (castle) castle.shift(10, 12);
     setTimeout(() => { gate.hidden = true; document.documentElement.classList.remove('locked'); }, reduceMotion ? 50 : 1500);
   });
-  soundBtn.addEventListener('click', () => {
-    const v = !Biwa.on; Biwa.setOn(v);
-    soundBtn.setAttribute('aria-pressed', String(v));
-    soundBtn.setAttribute('aria-label', v ? 'Matikan suara biwa' : 'Putar suara biwa');
-  });
+  soundBtn.addEventListener('click', () => setSound(!Biwa.on));
 
   /* each new form (section) = one biwa strike */
   let current = 0;
@@ -802,6 +944,82 @@
     });
   }, { threshold: 0.55 });
   document.querySelectorAll('section[data-form]').forEach(s => io.observe(s));
+
+  /* ======================= Prewedding photos =======================
+     Put real photos in foto/prewedding-1.jpg … prewedding-7.jpg next to this page.
+     Until then each missing photo is replaced by a drawn placeholder. */
+  const TONES = [['#241a1e', '#f3e7dc'], ['#1e1016', '#f2c79c'], ['#17111f', '#d8c6f0'], ['#22140f', '#f5d9ae'], ['#151016', '#ecd8c6'], ['#1b0f12', '#f0b9a8'], ['#1a1418', '#efe2d2']];
+  function placeholder(i) {
+    const w = 800, h = 1000, s = h / 1000;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const [bg, light] = TONES[i % TONES.length];
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    const cx = w * (0.5 + ((i % 3) - 1) * 0.06), cy = h * 0.4, r = w * 0.43;
+    const spot = g.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
+    spot.addColorStop(0, light); spot.addColorStop(0.88, light + 'd0'); spot.addColorStop(1, bg);
+    g.fillStyle = spot; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+    const floor = g.createLinearGradient(0, h * 0.72, 0, h);
+    floor.addColorStop(0, 'rgba(0,0,0,0)'); floor.addColorStop(1, 'rgba(0,0,0,0.55)');
+    g.fillStyle = floor; g.fillRect(0, h * 0.72, w, h * 0.28);
+    const gap = 70 + (i % 2) * 30;
+    function couple(dx, dy, color) {
+      g.fillStyle = color;
+      const x0 = w / 2 - gap + dx, x1 = w / 2 + gap * 0.9 + dx;
+      // groom
+      g.beginPath(); g.ellipse(x0, 300 * s + dy, 34 * s, 42 * s, 0, 0, Math.PI * 2); g.fill();
+      g.fillRect(x0 - 14 * s, 335 * s + dy, 28 * s, 40 * s);
+      g.beginPath(); g.moveTo(x0 - 82 * s, 385 * s + dy); g.quadraticCurveTo(x0, 360 * s + dy, x0 + 82 * s, 385 * s + dy);
+      g.lineTo(x0 + 64 * s, 640 * s + dy); g.lineTo(x0 - 64 * s, 640 * s + dy); g.closePath(); g.fill();
+      g.fillRect(x0 - 60 * s, 630 * s + dy, 54 * s, 310 * s); g.fillRect(x0 + 6 * s, 630 * s + dy, 54 * s, 310 * s);
+      // bride
+      g.beginPath(); g.arc(x1, 320 * s + dy, 31 * s, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(x1 + 24 * s, 300 * s + dy, 17 * s, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.moveTo(x1 - 46 * s, 392 * s + dy); g.lineTo(x1 + 46 * s, 392 * s + dy);
+      g.lineTo(x1 + 32 * s, 520 * s + dy);
+      g.bezierCurveTo(x1 + 90 * s, 650 * s + dy, x1 + 170 * s, 860 * s + dy, x1 + 230 * s, 945 * s + dy);
+      g.lineTo(x1 - 150 * s, 945 * s + dy);
+      g.bezierCurveTo(x1 - 110 * s, 800 * s + dy, x1 - 60 * s, 650 * s + dy, x1 - 32 * s, 520 * s + dy);
+      g.closePath(); g.fill();
+    }
+    couple(70 * s, -10 * s, 'rgba(20,12,14,0.18)');   // shadow on the backdrop
+    // veil
+    const x1 = w / 2 + gap * 0.9;
+    g.fillStyle = 'rgba(255,255,255,0.22)';
+    g.beginPath(); g.moveTo(x1 + 20 * s, 300 * s);
+    g.bezierCurveTo(x1 + 120 * s, 420 * s, x1 + 200 * s, 700 * s, x1 + 330 * s, 960 * s);
+    g.lineTo(x1 + 60 * s, 960 * s); g.bezierCurveTo(x1 + 60 * s, 700 * s, x1 + 30 * s, 450 * s, x1 + 20 * s, 300 * s); g.fill();
+    couple(0, 0, 'rgba(14,9,11,0.94)');
+    g.fillStyle = 'rgba(244,226,189,0.65)';
+    g.font = `500 ${22 * s}px "Zen Kaku Gothic New", system-ui, sans-serif`;
+    g.textAlign = 'center';
+    g.fillText('FOTO PREWEDDING · CONTOH ' + (i + 1), w / 2, h - 34 * s);
+    return c.toDataURL('image/jpeg', 0.86);
+  }
+  document.querySelectorAll('img[data-ph]').forEach(img => {
+    const swap = () => { if (!img.dataset.swapped) { img.dataset.swapped = '1'; img.src = placeholder(Number(img.dataset.ph)); } };
+    img.addEventListener('error', swap);
+    if (img.complete && img.naturalWidth === 0) swap();
+  });
+
+  const lightbox = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lbImg');
+  document.querySelectorAll('#gallery .frame').forEach(btn => btn.addEventListener('click', () => {
+    const img = btn.querySelector('img');
+    lbImg.src = img.src; lbImg.alt = img.alt;
+    if (lightbox.showModal) lightbox.showModal(); else lightbox.setAttribute('open', '');
+  }));
+  document.getElementById('lbClose').addEventListener('click', () => lightbox.close ? lightbox.close() : lightbox.removeAttribute('open'));
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.close(); });
+
+  if (!reduceMotion && 'IntersectionObserver' in window) {
+    const reveal = new IntersectionObserver(entries => entries.forEach(en => {
+      if (en.isIntersecting) { en.target.classList.remove('pre'); reveal.unobserve(en.target); }
+    }), { threshold: 0.15 });
+    document.querySelectorAll('main .card').forEach(card => {
+      if (card.getBoundingClientRect().top > innerHeight) { card.classList.add('pre'); reveal.observe(card); }
+    });
+  }
 
   /* ======================= Countdown ======================= */
   const cd = ['cdD', 'cdH', 'cdM', 'cdS'].map(id => document.getElementById(id));
