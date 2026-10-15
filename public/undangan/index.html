@@ -597,7 +597,7 @@
     }
     function setAmbient(v) { ambientOn = v; if (v) ambient(); else clearTimeout(loopTimer); }
     function setLevel(v) { if (master) master.gain.value = v; }
-    return { setOn, setAmbient, setLevel, strike, get on() { return on; } };
+    return { setOn, setAmbient, setLevel, strike, get on() { return on; }, get ctx() { init(); return ctx; } };
   })();
 
   /* ======================= Three.js Infinity Castle ======================= */
@@ -893,32 +893,117 @@
   const gate = document.getElementById('gate');
   const soundBtn = document.getElementById('soundBtn');
   document.documentElement.classList.add('locked');
-  /* theme.mp3 next to this page; without it the synthesized biwa plays alone */
-  const theme = document.getElementById('theme');
-  let themeOk = true, fadeRaf = 0;
-  function useBiwaOnly() { themeOk = false; Biwa.setLevel(0.55); if (Biwa.on) Biwa.setAmbient(true); }
-  theme.addEventListener('error', useBiwaOnly);
-  function fadeTo(vol, ms, done) {
-    cancelAnimationFrame(fadeRaf);
-    const v0 = theme.volume, t0 = performance.now();
-    const step = now => {
-      const k = Math.min(1, (now - t0) / ms);
-      try { theme.volume = v0 + (vol - v0) * k; } catch (e) {}
-      if (k < 1) fadeRaf = requestAnimationFrame(step); else if (done) done();
-    };
-    fadeRaf = requestAnimationFrame(step);
-  }
+  /* ======================= Theme music =======================
+     theme.mp3 next to this page. Some hosts block <audio> from loading it directly,
+     so it falls back to a blob URL, then to decoding it with Web Audio.
+     Without the file at all, the synthesized biwa plays alone. */
+  const Theme = (() => {
+    const el = document.getElementById('theme');
+    const VOL = 0.75;
+    let mode = 'pending', ab = null, buf = null, node = null, gain = null, want = false, fadeRaf = 0, stage = 0;
+    let settle;
+    const ready = new Promise(r => { settle = m => { if (mode === 'pending') { mode = m; el.dataset.mode = m; r(); } }; });
+    function fetchFile() {
+      if (ab) return Promise.resolve(ab);
+      return fetch('theme.mp3').then(r => {
+        const type = r.headers.get('content-type') || '';
+        if (!r.ok || type.includes('text/html')) throw new Error('no theme');
+        return r.arrayBuffer();
+      }).then(a => (ab = a));
+    }
+    // A blocked <audio> may never fire "error", so a watchdog moves on after a few seconds.
+    let watchdog = setTimeout(fail, 4000);
+    el.addEventListener('canplay', () => { clearTimeout(watchdog); settle('element'); });
+    el.addEventListener('error', fail);
+    function fail() {
+      clearTimeout(watchdog);
+      if (mode !== 'pending') return;
+      if (stage++ > 0) { settle(ab ? 'buffer' : 'none'); return; }
+      fetchFile().then(a => {
+        el.src = URL.createObjectURL(new Blob([a], { type: 'audio/mpeg' }));
+        el.load();
+        watchdog = setTimeout(fail, 3000);
+      }).catch(() => settle('none'));
+    }
+    function fadeEl(vol, ms, done) {
+      cancelAnimationFrame(fadeRaf);
+      const v0 = el.volume, t0 = performance.now();
+      const step = now => {
+        const k = Math.min(1, (now - t0) / ms);
+        try { el.volume = v0 + (vol - v0) * k; } catch (e) {}
+        if (k < 1) fadeRaf = requestAnimationFrame(step); else if (done) done();
+      };
+      fadeRaf = requestAnimationFrame(step);
+    }
+    function startBuffer() {
+      const ctx = Biwa.ctx;
+      if (!ctx) return Promise.reject(new Error('no audio'));
+      if (ctx.state === 'suspended') ctx.resume();
+      const decoded = buf ? Promise.resolve(buf)
+        : fetchFile().then(a => new Promise((res, rej) => ctx.decodeAudioData(a.slice(0), res, rej))).then(b => (buf = b));
+      return decoded.then(b => {
+        if (!want) return;
+        if (node) try { node.stop(); } catch (e) {}
+        gain = ctx.createGain(); gain.gain.value = 0;
+        gain.connect(ctx.destination);
+        node = ctx.createBufferSource(); node.buffer = b; node.loop = true;
+        node.connect(gain); node.start();
+        gain.gain.linearRampToValueAtTime(VOL, ctx.currentTime + 2.5);
+        mode = 'buffer'; el.dataset.mode = 'buffer-playing';
+      });
+    }
+    function playEl() {
+      try { el.volume = 0; } catch (e) {}
+      let timedOut = false;
+      const p = el.play();
+      const played = (p && p.then ? p : Promise.resolve()).then(() => {
+        if (timedOut) { el.pause(); throw new Error('late'); }
+        fadeEl(VOL, 2500);
+      });
+      const limit = new Promise((_, rej) => setTimeout(() => { timedOut = true; rej(new Error('timeout')); }, 3500));
+      return Promise.race([played, limit]);
+    }
+    function start() {
+      want = true;
+      if (mode === 'none') return Promise.reject(new Error('no theme'));
+      if (mode === 'buffer') return startBuffer();
+      // element or still loading: call play() now, inside the tap, so the browser allows it
+      return playEl().catch(() => {
+        el.pause();
+        return ready.then(() => {
+          if (!want) return;
+          if (mode === 'element') return playEl().catch(startBuffer);
+          if (mode === 'buffer') return startBuffer();
+          throw new Error('no theme');
+        });
+      });
+    }
+    function stop() {
+      want = false;
+      fadeEl(0, 400, () => el.pause());
+      if (node && gain) {
+        const ctx = Biwa.ctx, n = node;
+        gain.gain.cancelScheduledValues(ctx.currentTime);
+        gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+        setTimeout(() => { try { n.stop(); } catch (e) {} }, 450);
+        node = null;
+      }
+    }
+    return { start, stop, get wanted() { return want; } };
+  })();
+
   function setSound(v) {
     Biwa.setOn(v);
     soundBtn.setAttribute('aria-pressed', String(v));
     soundBtn.setAttribute('aria-label', v ? 'Matikan musik' : 'Putar musik');
-    if (!v) { fadeTo(0, 400, () => theme.pause()); return; }
-    if (!themeOk) { Biwa.setAmbient(true); return; }
-    Biwa.setAmbient(false); Biwa.setLevel(0.3);
-    try { theme.volume = 0; } catch (e) {}
-    const p = theme.play();
-    if (p && p.then) p.then(() => fadeTo(0.75, 2500), useBiwaOnly);
-    else fadeTo(0.75, 2500);
+    if (!v) { Theme.stop(); return; }
+    // biwa carries the mood until the theme actually starts
+    Biwa.setLevel(0.55); Biwa.setAmbient(true);
+    Theme.start().then(() => {
+      if (!Theme.wanted) return;
+      Biwa.setAmbient(false); Biwa.setLevel(0.3);
+    }, () => {});
   }
   document.getElementById('openBtn').addEventListener('click', () => {
     soundBtn.hidden = false;
